@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tmux Command Reference</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Tmux Command Reference</h1>
+            <button id="theme-toggle" aria-label="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
+        </header>
+        <div id="loading">Loading commands...</div>
+
+        <div class="categories">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        const REMOTE_JSON = 'https://raw.githubusercontent.com/l9c/tmux_cheat_sheet_data/refs/heads/master/tmux.json';
+        const LOCAL_JSON = 'tmux.json';
+
+        // Load and parse the JSON data
+        fetch(REMOTE_JSON)
+            .catch(err => {
+                console.warn('Failed to load remote JSON, falling back to local:', err);
+                return fetch(LOCAL_JSON);
+            })
+            .then(response => response.json())
+            .then(data => {
+                const categories = {};
+
+                // Group commands by category
+                data.forEach(cmd => {
+                    if (!categories[cmd.cat]) {
+                        categories[cmd.cat] = [];
+                    }
+                    categories[cmd.cat].push(cmd);
+                });
+
+                const categoriesDiv = document.querySelector('.categories');
+                document.getElementById('loading').style.display = 'none';
+
+                // Create sections for each category
+                Object.entries(categories).forEach(([category, commands]) => {
+                    const section = document.createElement('section');
+                    section.innerHTML = `
+                        <h2>${category}</h2>
+                        <div class="commands">
+                            ${commands.map(cmd => `
+                                <div class="command-card">
+                                    <h3>${cmd.desc}</h3>
+                                    ${cmd.shortcut.length ? `
+                                        <div class="shortcuts">
+                                            ${cmd.shortcut.map(shortcut => `
+                                                <div class="shortcut">${shortcut}</div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    ${cmd.shell.length ? `
+                                        <div class="shell">
+                                            ${cmd.shell.map(shell => `
+                                                <code>${shell}</code>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    ${cmd.tmuxcmd.length ? `
+                                        <div class="tmuxcmd">
+                                            ${cmd.tmuxcmd.map(tmuxcmd => `
+                                                <code>${tmuxcmd}</code>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    categoriesDiv.appendChild(section);
+                });
+            });
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+        function setTheme(isDark) {
+            document.body.classList.toggle('dark-theme', isDark);
+            themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        }
+
+        // Set initial theme based on system preference
+        setTheme(prefersDark.matches);
+
+        // Toggle theme on button click
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            setTheme(isDark);
+            localStorage.setItem('darkTheme', isDark);
+        });
+
+        // Listen for system theme changes
+        prefersDark.addEventListener('change', (e) => setTheme(e.matches));
+    </script>
+</body>
+
+</html>
